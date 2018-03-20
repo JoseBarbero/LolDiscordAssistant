@@ -73,6 +73,7 @@ def gotChest(my_region, sum_name, champ_name):
         champ_id = df_champs.loc[df_champs.name.str.lower() == champ_name.lower(), "id"].values[0]
     except:
         print('Wrong champion name.')
+        return None
     sum_id = watcher.summoner.by_name(my_region, sum_name)["id"]
     champ_id = df_champs.loc[df_champs.name.str.lower() == champ_name.lower(), "id"].values[0]
     return watcher.champion_mastery.by_summoner_by_champion(my_region, sum_id, champ_id)["chestGranted"]
