@@ -52,10 +52,17 @@ def getCurrentGameData(summonerName):
                 line.append("W/L: NODATA")
                 line.append("\t|\t")
                 line.append("NODATA")
+            line.append("\t|\t")
+            line.append(p["summonerName"])
             line.append("\n")
             ret_str.append(''.join(line))
         ret_str.append("\n\n")
     return "".join(ret_str)
+
+def canIGetChest(my_region, sum_name, champ_name):
+    sum_id = watcher.summoner.by_name(my_region, sum_name)["id"]
+    champ_id = df_champs.loc[df_champs.name.str.lower() == champ_name.lower(), "id"].values[0]
+    return watcher.champion_mastery.by_summoner_by_champion(my_region, sum_id, champ_id)["chestGranted"]
 
 
 @client.event
@@ -68,7 +75,7 @@ async def on_ready():
 
 @client.command(pass_context=True)
 async def game(ctx, summoner="empty"):
-    """Sends a predefined number of dices."""
+    """Sends the current game info."""
     if summoner == "empty":
         await client.say("Plase, enter a correct summoner name.")
     else:
@@ -76,9 +83,19 @@ async def game(ctx, summoner="empty"):
         await client.say(getCurrentGameData(summoner))
 
 @client.command(pass_context=True)
+async def canChest(ctx, summoner="empty", champion="empty"):
+    """Sends the current game info."""
+    if summoner == "empty" or champion=="empty":
+        await client.say("Plase, enter a correct summoner name and a correct champion.")
+    else:
+        if canIGetChest(my_region, summoner, champion):
+            await client.say(f"Yes, you don't have a chest with {champion} yet.")
+        else:
+            await client.say(f"No, sorry. You already got an S with {champion}.")            
+
+@client.command(pass_context=True)
 async def clear(ctx):
     """ Clears every bot message from the channel. """
     await client.purge_from(ctx.message.channel, limit=200, check=lambda m: (m.author == client.user) or m.content.startswith(prefix))
 
-#def set_picture(url):
 client.run(os.environ['DISCORD_KEY'])
