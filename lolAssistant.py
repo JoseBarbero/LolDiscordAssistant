@@ -48,10 +48,14 @@ def getCurrentGameData(summonerName):
             line.append("LVL "+str(user["summonerLevel"]))
             line.append("\t|\t")
             #Hay gente que no tiene datos de ranked
-            if (len(ranked_data) > 0):
+            if (len(ranked_data) == 1):
                 line.append("W/L: "+str(ranked_data[0]["wins"])+"/"+str(ranked_data[0]["losses"]))
                 line.append("\t|\t")
                 line.append(ranked_data[0]["tier"]+" "+ranked_data[0]["rank"])
+            elif (len(ranked_data) == 2):
+                line.append("W/L: "+str(ranked_data[1]["wins"])+"/"+str(ranked_data[1]["losses"]))
+                line.append("\t|\t")
+                line.append(ranked_data[1]["tier"]+" "+ranked_data[1]["rank"])
             else:
                 line.append("W/L: NODATA")
                 line.append("\t|\t")
