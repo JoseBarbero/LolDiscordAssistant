@@ -47,15 +47,34 @@ def getCurrentGameData(summonerName):
             line.append("\t|\t")
             line.append("LVL "+str(user["summonerLevel"]))
             line.append("\t|\t")
-            #Hay gente que no tiene datos de ranked
-            if (len(ranked_data) == 1):
-                line.append("W/L: "+str(ranked_data[0]["wins"])+"/"+str(ranked_data[0]["losses"]))
+
+            #Don't judge me for this, I have no time
+            if (len(ranked_data) == 0):
+                line.append("W/L: NODATA")
                 line.append("\t|\t")
-                line.append(ranked_data[0]["tier"]+" "+ranked_data[0]["rank"])
+                line.append("NODATA")
+            elif (len(ranked_data) == 1):
+                if ranked_data[0]["queueType"]=="RANKED_SOLO_5x5":
+                    line.append("W/L: "+str(ranked_data[0]["wins"])+"/"+str(ranked_data[0]["losses"]))
+                    line.append("\t|\t")
+                    line.append(ranked_data[0]["tier"]+" "+ranked_data[0]["rank"])
+                else:
+                    line.append("W/L: NODATA")
+                    line.append("\t|\t")
+                    line.append("NODATA")
             elif (len(ranked_data) == 2):
-                line.append("W/L: "+str(ranked_data[1]["wins"])+"/"+str(ranked_data[1]["losses"]))
-                line.append("\t|\t")
-                line.append(ranked_data[1]["tier"]+" "+ranked_data[1]["rank"])
+                if ranked_data[0]["queueType"]=="RANKED_SOLO_5x5":
+                    line.append("W/L: "+str(ranked_data[0]["wins"])+"/"+str(ranked_data[0]["losses"]))
+                    line.append("\t|\t")
+                    line.append(ranked_data[0]["tier"]+" "+ranked_data[0]["rank"])
+                elif ranked_data[1]["queueType"]=="RANKED_SOLO_5x5":
+                    line.append("W/L: "+str(ranked_data[1]["wins"])+"/"+str(ranked_data[1]["losses"]))
+                    line.append("\t|\t")
+                    line.append(ranked_data[1]["tier"]+" "+ranked_data[1]["rank"])
+                else:
+                    line.append("W/L: NODATA")
+                    line.append("\t|\t")
+                    line.append("NODATA")
             else:
                 line.append("W/L: NODATA")
                 line.append("\t|\t")
