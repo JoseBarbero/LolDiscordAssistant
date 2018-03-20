@@ -66,10 +66,13 @@ def getCurrentGameData(summonerName):
 def gotChest(my_region, sum_name, champ_name):
     try:
         sum_id = watcher.summoner.by_name(my_region, sum_name)["id"]
+    except HTTPError as err::
+        print('Wrong summoner name.')
+        return None
+    try:
         champ_id = df_champs.loc[df_champs.name.str.lower() == champ_name.lower(), "id"].values[0]
     except:
-        print('Summoner or champ name are wrong.')
-        return None
+        print('Wrong champion name.')
     sum_id = watcher.summoner.by_name(my_region, sum_name)["id"]
     champ_id = df_champs.loc[df_champs.name.str.lower() == champ_name.lower(), "id"].values[0]
     return watcher.champion_mastery.by_summoner_by_champion(my_region, sum_id, champ_id)["chestGranted"]
