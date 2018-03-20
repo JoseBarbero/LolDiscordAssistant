@@ -32,8 +32,7 @@ def getCurrentGameData(summonerName):
         summonerId = watcher.summoner.by_name(my_region, summonerName)["id"]
         game = watcher.spectator.by_summoner(my_region, summonerId)
     except HTTPError as err:
-        print('Probably this summoner is not currently in a game or his name is wrong.')
-        return ""
+        return 'Probably this summoner is not currently in a game or his name is wrong.'
     sides = getCurrentGamePlayers(game)
     sideNames = ["Blue", "Red"]
     for i in range(len(["Blue", "Red"])):
