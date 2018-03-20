@@ -59,7 +59,7 @@ def getCurrentGameData(summonerName):
         ret_str.append("\n\n")
     return "".join(ret_str)
 
-def canIGetChest(my_region, sum_name, champ_name):
+def gotChest(my_region, sum_name, champ_name):
     sum_id = watcher.summoner.by_name(my_region, sum_name)["id"]
     champ_id = df_champs.loc[df_champs.name.str.lower() == champ_name.lower(), "id"].values[0]
     return watcher.champion_mastery.by_summoner_by_champion(my_region, sum_id, champ_id)["chestGranted"]
@@ -88,10 +88,11 @@ async def canchest(ctx, summoner="empty", champion="empty"):
     if summoner == "empty" or champion=="empty":
         await client.say("Plase, enter a correct summoner name and a correct champion.")
     else:
-        if canIGetChest(my_region, summoner, champion):
-            await client.say(f"Yes, you don't have a chest with {champion} yet.")
+        if gotChest(my_region, summoner, champion):
+            await client.say(f"No, sorry. You already got an S with {champion}.")
         else:
-            await client.say(f"No, sorry. You already got an S with {champion}.")            
+            await client.say(f"Yes, you don't have a chest with {champion} yet.")
+                        
 
 @client.command(pass_context=True)
 async def clear(ctx):
