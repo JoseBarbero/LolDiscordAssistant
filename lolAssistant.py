@@ -84,7 +84,7 @@ async def game(ctx, summoner="empty"):
 
 @client.command(pass_context=True)
 async def canchest(ctx, summoner="empty", champion="empty"):
-    """Sends the current game info."""
+    """Tells if tha given summoner can get a chest with the given champion."""
     if summoner == "empty" or champion=="empty":
         await client.say("Plase, enter a correct summoner name and a correct champion.")
     else:
