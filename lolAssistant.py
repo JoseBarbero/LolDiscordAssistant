@@ -66,7 +66,7 @@ def getCurrentGameData(summonerName):
 def gotChest(my_region, sum_name, champ_name):
     try:
         sum_id = watcher.summoner.by_name(my_region, sum_name)["id"]
-    except HTTPError as err::
+    except HTTPError as err:
         print('Wrong summoner name.')
         return None
     try:
