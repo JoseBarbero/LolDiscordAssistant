@@ -4,6 +4,7 @@ from discord.ext.commands import Bot
 from discord.ext import commands
 import discord
 import os
+from requests import HTTPError
 
 prefix="!"
 client = Bot(description="Fate bot for discord.", command_prefix=prefix, pm_help = False)
@@ -27,8 +28,12 @@ def getCurrentGamePlayers(game):
 
 def getCurrentGameData(summonerName):
     ret_str = []
-    summonerId = watcher.summoner.by_name(my_region, summonerName)["id"]
-    game = watcher.spectator.by_summoner(my_region, summonerId)
+    try:
+        summonerId = watcher.summoner.by_name(my_region, summonerName)["id"]
+        game = watcher.spectator.by_summoner(my_region, summonerId)
+    except HTTPError as err:
+        print('Probably this summoner is not currently in a game or his name is wrong.')
+        return ""
     sides = getCurrentGamePlayers(game)
     sideNames = ["Blue", "Red"]
     for i in range(len(["Blue", "Red"])):
