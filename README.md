@@ -4,4 +4,4 @@
 
 Discord assistant to get League of Legends data.
 
-In order to use Fate&Discord bot, please, use this link to invite the bot to your own discord server: https://discordapp.com/oauth2/authorize?client_id=425635422874370058&scope=bot
+In order to use lol-assistant bot, please, use this link to invite the bot to your own discord server: https://discordapp.com/oauth2/authorize?client_id=425635422874370058&scope=bot
