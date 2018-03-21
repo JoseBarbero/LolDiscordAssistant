@@ -5,6 +5,7 @@ from discord.ext import commands
 import discord
 import os
 from requests import HTTPError
+from texttable import Texttable
 
 prefix="!"
 client = Bot(description="League of Legends assistant bot for discord.", command_prefix=prefix, pm_help = False)
@@ -36,55 +37,45 @@ def getCurrentGameData(summonerName):
     sides = getCurrentGamePlayers(game)
     sideNames = ["Blue", "Red"]
     for i in range(len(["Blue", "Red"])):
-        ret_str.append(sideNames[i]+" side:\n")
+        ret_str.append(sideNames[i]+" side:")
+        t = Texttable()
         for p in sides[i]:
             line = []
             user = watcher.summoner.by_name(my_region, p["summonerName"])
             ranked_data = watcher.league.positions_by_summoner(my_region, user["id"])
             line.append(df_champs.loc[df_champs.id == p["championId"],"name"].values[0])
-            line.append("\t|\t")
             line.append("Mastery "+str(watcher.champion_mastery.by_summoner_by_champion(my_region, p["summonerId"], p["championId"])["championLevel"]))
-            line.append("\t|\t")
             line.append("LVL "+str(user["summonerLevel"]))
-            line.append("\t|\t")
 
             #Don't judge me for this, I have no time
             if (len(ranked_data) == 0):
                 line.append("W/L: NODATA")
-                line.append("\t|\t")
                 line.append("NODATA")
             elif (len(ranked_data) == 1):
                 if ranked_data[0]["queueType"]=="RANKED_SOLO_5x5":
                     line.append("W/L: "+str(ranked_data[0]["wins"])+"/"+str(ranked_data[0]["losses"]))
-                    line.append("\t|\t")
                     line.append(ranked_data[0]["tier"]+" "+ranked_data[0]["rank"])
                 else:
                     line.append("W/L: NODATA")
-                    line.append("\t|\t")
                     line.append("NODATA")
             elif (len(ranked_data) == 2):
                 if ranked_data[0]["queueType"]=="RANKED_SOLO_5x5":
                     line.append("W/L: "+str(ranked_data[0]["wins"])+"/"+str(ranked_data[0]["losses"]))
-                    line.append("\t|\t")
                     line.append(ranked_data[0]["tier"]+" "+ranked_data[0]["rank"])
                 elif ranked_data[1]["queueType"]=="RANKED_SOLO_5x5":
                     line.append("W/L: "+str(ranked_data[1]["wins"])+"/"+str(ranked_data[1]["losses"]))
-                    line.append("\t|\t")
                     line.append(ranked_data[1]["tier"]+" "+ranked_data[1]["rank"])
                 else:
                     line.append("W/L: NODATA")
-                    line.append("\t|\t")
                     line.append("NODATA")
             else:
                 line.append("W/L: NODATA")
-                line.append("\t|\t")
                 line.append("NODATA")
-            line.append("\t|\t")
             line.append(p["summonerName"])
-            line.append("\n")
-            ret_str.append(''.join(line))
-        ret_str.append("\n\n")
-    return "".join(ret_str)
+            t.add_row(line)
+        ret_str.append(t.draw())
+        ret_str.append('\n')
+    return ret_str
 
 def gotChest(my_region, sum_name, champ_name):
     try:
@@ -117,7 +108,7 @@ async def game(ctx, summoner="empty"):
         await client.say("Plase, enter a correct summoner name.")
     else:
         await client.say("Loading... Please wait.")
-        await client.say(getCurrentGameData(summoner))
+        await client.say('\n'.join(getCurrentGameData(summoner)))
 
 @client.command(pass_context=True)
 async def canchest(ctx, summoner="empty", champion="empty"):
