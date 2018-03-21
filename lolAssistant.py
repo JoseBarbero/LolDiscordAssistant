@@ -7,7 +7,7 @@ import os
 from requests import HTTPError
 
 prefix="!"
-client = Bot(description="Fate bot for discord.", command_prefix=prefix, pm_help = False)
+client = Bot(description="League of Legends assistant bot for discord.", command_prefix=prefix, pm_help = False)
 my_region = 'EUW1'
 watcher = rw(os.environ['LOL_KEY'])
 df_champs = pd.DataFrame()
