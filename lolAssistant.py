@@ -48,7 +48,7 @@ def getCurrentGameData(summonerName):
             try:
                 line.append("Mastery "+str(watcher.champion_mastery.by_summoner_by_champion(my_region, p["summonerId"], p["championId"])["championLevel"]))
             except HTTPError as err:
-                line.append("Mastery NODATA")
+                line.append("Mastery 0")
             line.append("\t|\t")
             line.append("LVL "+str(user["summonerLevel"]))
             line.append("\t|\t")
