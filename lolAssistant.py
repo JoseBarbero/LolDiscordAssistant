@@ -108,7 +108,7 @@ async def game(ctx, summoner="empty"):
         await client.say("Plase, enter a correct summoner name.")
     else:
         await client.say("Loading... Please wait.")
-        await client.say('\n'.join(getCurrentGameData(summoner)))
+        await client.send_message(ctx.message.channel, '\n'.join(getCurrentGameData(summoner)))
 
 @client.command(pass_context=True)
 async def canchest(ctx, summoner="empty", champion="empty"):
