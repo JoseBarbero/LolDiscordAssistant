@@ -44,7 +44,10 @@ def getCurrentGameData(summonerName):
             user = watcher.summoner.by_name(my_region, p["summonerName"])
             ranked_data = watcher.league.positions_by_summoner(my_region, user["id"])
             line.append(df_champs.loc[df_champs.id == p["championId"],"name"].values[0])
-            line.append("Mastery "+str(watcher.champion_mastery.by_summoner_by_champion(my_region, p["summonerId"], p["championId"])["championLevel"]))
+            try:
+                line.append("Mastery "+str(watcher.champion_mastery.by_summoner_by_champion(my_region, p["summonerId"], p["championId"])["championLevel"]))
+            except HTTPError as err:
+                line.append("Mastery NODATA")
             line.append("LVL "+str(user["summonerLevel"]))
 
             #Don't judge me for this, I have no time
