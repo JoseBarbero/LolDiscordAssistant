@@ -10,7 +10,8 @@ from texttable import Texttable
 from bs4 import BeautifulSoup
 
 prefix="!"
-client = Bot(description="League of Legends assistant bot for discord.", command_prefix=prefix, pm_help = False)
+invite_link="https://discordapp.com/oauth2/authorize?client_id=425635422874370058&scope=bot"
+client = Bot(description="League of Legends assistant bot for discord. Developed by SowlJBA. \n If you want to use this bot in your own server, please use this link: "+invite_link, command_prefix=prefix, pm_help = False)
 my_region = 'EUW1'
 watcher = rw(os.environ['LOL_KEY'])
 df_champs = pd.DataFrame()
@@ -237,5 +238,10 @@ async def counter(ctx, champ="empty"):
 async def clear(ctx):
     """ Clears every bot message from the channel. """
     await client.purge_from(ctx.message.channel, limit=200, check=lambda m: (m.author == client.user) or m.content.startswith(prefix))
+
+@client.command(pass_context=True)
+async def invitelink(ctx):
+    """ Send the invitation link to use this bot in your own server. """
+    await client.say("If you want to use this bot in you own server, use this link: \n"+invite_link)
 
 client.run(os.environ['DISCORD_KEY'])
