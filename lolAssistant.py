@@ -8,6 +8,8 @@ import requests
 from requests import HTTPError
 from texttable import Texttable
 from bs4 import BeautifulSoup
+from io import BytesIO
+from PIL import Image
 
 prefix="!"
 invite_link="https://discordapp.com/oauth2/authorize?client_id=425635422874370058&scope=bot"
@@ -172,6 +174,76 @@ def formatChamps (champs, formatted_champs):
         f_champs.append(formatted_champs[champ])
     return f_champs
 
+def getRunes(champion, pos):
+    counters = {}
+    images = []
+    page = requests.get(f'http://euw.op.gg/champion/{champion}/statistics/{pos}')
+    soup = BeautifulSoup(page.text, 'html.parser')
+    runes_boxes = soup.find(class_="perk-page-wrap")
+    for rune_row in runes_boxes.find_all(class_="perk-page__row"):
+        for image in rune_row.find_all(class_="perk-page__image"):
+            for img in image.find_all("img"):
+                img_name = img["src"].split("/")[-1].split("?")
+                images.append("http:"+img["src"])
+
+    new_im = Image.new('RGBA', (700,400))
+    i = 0
+    x_pos = range(0, 400, 100)
+    y_pos = range(0, 300, 100)
+    x_col = [0, 350]
+    y_col = [0, 50]
+    for c in range(len(x_col)):
+        for x in x_pos:
+            for y in y_pos:
+                if i<len(images):
+                    r = requests.get(images[i])
+                    b = BytesIO(r.content)
+                    size = 100, 100
+                    img = Image.open(b)
+                    img = img.convert('RGBA')
+                    img.thumbnail(size)
+                    new_im.paste(img, (y+x_col[c], x+y_col[c]))
+                i+=1
+    return new_im
+
+def getBuild(champion, pos):
+    images = []
+    arrow = "https://opgg-static.akamaized.net/images/site/champion/blet.png"
+    page = requests.get(f'http://euw.op.gg/champion/{champion}/statistics/{pos}')
+    soup = BeautifulSoup(page.text, 'html.parser')
+    for items_row in soup.find_all(class_="champion-stats__list"):
+        row = []
+        for item in items_row.find_all(class_="champion-stats__list__item"):
+            row.append("http:"+item.find("img")["src"])
+        images.append(row)
+
+    new_im = Image.new('RGBA', (225,(len(images)+1)*50))
+
+    y = 25
+    for row in images:
+        x = 25
+        i = 0
+        for item in row:
+            i+=1
+            r = requests.get(item)
+            b = BytesIO(r.content)
+            size = 50, 50
+            img = Image.open(b)
+            img = img.convert('RGBA')
+            img.thumbnail(size)
+            new_im.paste(img, (x, y))
+            x += 70
+            if len(row) > 2 and i < len(row):
+                r = requests.get(arrow)
+                b = BytesIO(r.content)
+                size = 50, 50
+                img = Image.open(b)
+                img = img.convert('RGBA')
+                img.thumbnail(size)
+                new_im.paste(img, (x-15, y+13))
+        y += 50
+    return new_im
+
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user.name} (ID:{client.user.id}) | Connected to {str(len(client.servers))} servers | Connected to {str(len(set(client.get_all_members())))} users')
@@ -227,11 +299,17 @@ async def counter(ctx, champ="empty"):
             await client.say("Please, introduce a correct champion name.")
         else:
             message.append("WEAK VS:")
-            for counter, winrate in counters.items():
-                message.append(f"    {formatted_champs[nameToUrlFormat(champ)]}'s winrate vs {formatted_champs[counter]} is {round(100-winrate, 2)}%")     
+            if len(counters) > 0:
+                for counter, winrate in counters.items():
+                    message.append(f"    {formatted_champs[nameToUrlFormat(champ)]}'s winrate vs {formatted_champs[counter]} is {round(100-winrate, 2)}%")     
+            else:
+                message.append(f"    There are no champs with more than 55% winrate vs {formatted_champs[nameToUrlFormat(champ)]}")
             message.append("\nSTRONG VS:")
-            for countered, winrate in countereds.items():
-                message.append(f"    {formatted_champs[nameToUrlFormat(champ)]}'s winrate vs {formatted_champs[countered]} is {round(100-winrate, 2)}%")
+            if len(countereds) > 0:
+                for countered, winrate in countereds.items():
+                    message.append(f"    {formatted_champs[nameToUrlFormat(champ)]}'s winrate vs {formatted_champs[countered]} is {round(100-winrate, 2)}%")
+            else:
+                message.append(f"    There are no champs with less than 45% winrate vs {formatted_champs[nameToUrlFormat(champ)]}")
             await client.say('\n'.join(message))
 
 @client.command(pass_context=True)
@@ -243,5 +321,37 @@ async def clear(ctx):
 async def invitelink(ctx):
     """ Send the invitation link to use this bot in your own server. """
     await client.say("If you want to use this bot in you own server, use this link: \n"+invite_link)
+
+@client.command(pass_context=True)
+async def runes(ctx, champ, pos):
+    """ Send the recommended runes for a given champ and position. """
+    if champ == None or pos == None:
+        await client.say("Please, introduce a correct champion name.")
+    else:
+        await client.say("Working on it...")
+        filename = "temp.png"
+        getRunes(champ, pos).save(filename,"PNG")
+        await client.purge_from(ctx.message.channel, limit=1, check=lambda m: (m.author == ctx.message.author) or m.content.startswith("Working"))
+        await client.send_file(ctx.message.channel, filename)
+        try:
+            os.remove(filename)
+        except OSError:
+            pass
+
+@client.command(pass_context=True)
+async def build(ctx, champ, pos):
+    """ Send the recommended bluids for a given champ and position. """
+    if champ == None or pos == None:
+        await client.say("Please, introduce a correct champion name.")
+    else:
+        await client.say("Working on it...")
+        filename = "temp.png"
+        getBuild(champ, pos).save(filename,"PNG")
+        await client.purge_from(ctx.message.channel, limit=1, check=lambda m: (m.author == ctx.message.author) or m.content.startswith("Working"))
+        await client.send_file(ctx.message.channel, filename)
+        try:
+            os.remove(filename)
+        except OSError:
+            pass
 
 client.run(os.environ['DISCORD_KEY'])
