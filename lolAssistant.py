@@ -175,35 +175,52 @@ def formatChamps (champs, formatted_champs):
     return f_champs
 
 def getRunes(champion, pos):
-    counters = {}
     images = []
     page = requests.get(f'http://euw.op.gg/champion/{champion}/statistics/{pos}')
     soup = BeautifulSoup(page.text, 'html.parser')
     runes_boxes = soup.find(class_="perk-page-wrap")
-    for rune_row in runes_boxes.find_all(class_="perk-page__row"):
-        for image in rune_row.find_all(class_="perk-page__image"):
-            for img in image.find_all("img"):
-                img_name = img["src"].split("/")[-1].split("?")
-                images.append("http:"+img["src"])
-
-    new_im = Image.new('RGBA', (700,400))
-    i = 0
-    x_pos = range(0, 400, 100)
-    y_pos = range(0, 300, 100)
-    x_col = [0, 350]
-    y_col = [0, 50]
-    for c in range(len(x_col)):
-        for x in x_pos:
-            for y in y_pos:
-                if i<len(images):
-                    r = requests.get(images[i])
-                    b = BytesIO(r.content)
-                    size = 100, 100
-                    img = Image.open(b)
-                    img = img.convert('RGBA')
-                    img.thumbnail(size)
-                    new_im.paste(img, (y+x_col[c], x+y_col[c]))
-                i+=1
+    for rune_page in runes_boxes.find_all(class_="perk-page"):
+        rune_page_list = []
+        for rune_row in rune_page.find_all(class_="perk-page__row"):
+            img_row = []
+            for img in rune_row.find_all("img"):
+                img_row.append("http:"+img["src"])
+            rune_page_list.append(img_row)
+        images.append(rune_page_list)
+    
+    x_dim = 0
+    y_dim = 0
+    for rune_page in images:
+        if len(rune_page)>y_dim:
+            y_dim = len(rune_page)
+        for rune_row in rune_page:
+            if len(rune_row) > x_dim:
+                x_dim = len(rune_row)
+                
+    total_width = x_dim*275
+    total_heigth = y_dim*110
+    new_im = Image.new('RGBA', (total_width, total_heigth))
+    p = 0
+    for rune_page in images:
+        y = 25
+        col_width = total_width / 2
+        for row in rune_page:
+            c = 0
+            x_pos = range(0, int(col_width), int(col_width/(len(row)+1)))
+            for image in row:
+                r = requests.get(image)
+                b = BytesIO(r.content)
+                size = 100, 100
+                img = Image.open(b)
+                img = img.convert('RGBA')
+                img.thumbnail(size)
+                if y==25:
+                    new_im.paste(img, (x_pos[c+1]-50+p, y))
+                else:
+                    new_im.paste(img, (x_pos[c+1]-75+p, y))
+                c+=1
+            y += 100
+        p+=x_dim*125
     return new_im
 
 def getBuild(champion, pos):
@@ -243,6 +260,7 @@ def getBuild(champion, pos):
                 new_im.paste(img, (x-15, y+13))
         y += 50
     return new_im
+
 
 @client.event
 async def on_ready():
