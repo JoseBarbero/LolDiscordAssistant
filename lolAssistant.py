@@ -10,6 +10,8 @@ from texttable import Texttable
 from bs4 import BeautifulSoup
 from io import BytesIO
 from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw 
 
 prefix="!"
 invite_link="https://discordapp.com/oauth2/authorize?client_id=425635422874370058&scope=bot"
@@ -223,42 +225,267 @@ def getRunes(champion, pos):
         p+=x_dim*125
     return new_im
 
-def getBuild(champion, pos):
-    images = []
-    arrow = "https://opgg-static.akamaized.net/images/site/champion/blet.png"
+def getSummoners(champion, pos):
+    summoners = []
+
     page = requests.get(f'http://euw.op.gg/champion/{champion}/statistics/{pos}')
     soup = BeautifulSoup(page.text, 'html.parser')
-    for items_row in soup.find_all(class_="champion-stats__list"):
+    
+    #Summoners
+    champ = soup.find(class_="champion-overview__table champion-overview__table--summonerspell")
+    summs_block = champ.find("tbody")
+    for sum_row in summs_block.find_all(class_="champion-overview__data"):
+        row = []
+        for item in sum_row.find_all(class_="champion-stats__list__item"):
+            row.append("http:"+item.find("img")["src"])
+        summoners.append(row)
+    return summoners
+
+def getSkills(champion, pos):
+    skills = []
+    order = []
+    
+    page = requests.get(f'http://euw.op.gg/champion/{champion}/statistics/{pos}')
+    soup = BeautifulSoup(page.text, 'html.parser')
+    
+    #Summoners
+    champ = soup.find(class_="champion-overview__table champion-overview__table--summonerspell")
+    summs_block = champ.find_all("tbody")[1]
+
+    for item in summs_block.find_all(class_="champion-stats__list__item"):
+        skills.append(("http:"+item.find("img")["src"], item.find("span").text))
+    
+    skill_table = summs_block.find(class_="champion-skill-build__table")
+    skill_row = skill_table.find_all("tr")[1] #We take the second row
+    for cell in skill_row.find_all("td"):
+        order.append(cell.text.replace('\n', '').replace('\t', ''))
+    return skills, order
+
+def getBuild(champion, pos):
+    
+    inits = []
+    builds = []
+    boots = []
+    
+    page = requests.get(f'http://euw.op.gg/champion/{champion}/statistics/{pos}')
+    soup = BeautifulSoup(page.text, 'html.parser')
+    
+    #Summoners
+    n_group = 0
+    champ = soup.find_all(class_="champion-overview__table")[1] #Second table
+    for items_row in champ.find_all(class_="champion-overview__row"):
         row = []
         for item in items_row.find_all(class_="champion-stats__list__item"):
             row.append("http:"+item.find("img")["src"])
-        images.append(row)
+            
+        title = items_row.find(class_="champion-overview__sub-header")
+        if title != None:
+            n_group += 1
+        if n_group == 1: #So that we only get the first group (init items)
+            inits.append(row)
+        elif n_group == 2: #Core build
+            builds.append(row)
+        elif n_group == 3: #Boots
+            boots.append(row)            
+            
+    return inits, builds, boots
 
-    new_im = Image.new('RGBA', (225,(len(images)+1)*50))
-
-    y = 25
-    for row in images:
-        x = 25
-        i = 0
-        for item in row:
-            i+=1
-            r = requests.get(item)
-            b = BytesIO(r.content)
-            size = 50, 50
-            img = Image.open(b)
-            img = img.convert('RGBA')
-            img.thumbnail(size)
-            new_im.paste(img, (x, y))
-            x += 70
-            if len(row) > 2 and i < len(row):
-                r = requests.get(arrow)
+def getRunes(champion, pos):
+    images = []
+    page = requests.get(f'http://euw.op.gg/champion/{champion}/statistics/{pos}')
+    soup = BeautifulSoup(page.text, 'html.parser')
+    runes_boxes = soup.find(class_="perk-page-wrap")
+    for rune_page in runes_boxes.find_all(class_="perk-page"):
+        rune_page_list = []
+        for rune_row in rune_page.find_all(class_="perk-page__row"):
+            img_row = []
+            for img in rune_row.find_all("img"):
+                img_row.append("http:"+img["src"])
+            rune_page_list.append(img_row)
+        images.append(rune_page_list)
+    
+    x_dim = 0
+    y_dim = 0
+    for rune_page in images:
+        if len(rune_page)>y_dim:
+            y_dim = len(rune_page)
+        for rune_row in rune_page:
+            if len(rune_row) > x_dim:
+                x_dim = len(rune_row)
+                
+    total_width = x_dim*275
+    total_heigth = y_dim*110
+    new_im = Image.new('RGBA', (total_width, total_heigth))
+    p = 0
+    for rune_page in images:
+        y = 25
+        col_width = total_width / 2
+        for row in rune_page:
+            c = 0
+            x_pos = range(0, int(col_width), int(col_width/(len(row)+1)))
+            for image in row:
+                r = requests.get(image)
                 b = BytesIO(r.content)
-                size = 50, 50
+                size = 100, 100
                 img = Image.open(b)
                 img = img.convert('RGBA')
                 img.thumbnail(size)
-                new_im.paste(img, (x-15, y+13))
-        y += 50
+                if y==25:
+                    new_im.paste(img, (x_pos[c+1]-50+p, y))
+                else:
+                    new_im.paste(img, (x_pos[c+1]-75+p, y))
+                c+=1
+            y += 100
+        p+=x_dim*125
+    return new_im
+
+def getBuilds(chamion, pos):
+    summs = getSummoners(chamion, pos)
+    skills = getSkills(chamion, pos)
+    inits = getBuild(chamion, pos)[0]
+    build = getBuild(chamion, pos)[1]
+    boots = getBuild(chamion, pos)[2]
+    
+    arrow = "https://opgg-static.akamaized.net/images/site/champion/blet.png"
+    
+    y_dim = len(max([summs, skills, inits, build], key=len))
+    
+    total_width = 1200
+    total_heigth = y_dim*100
+    new_im = Image.new('RGBA', (total_width, total_heigth))
+    
+    #Summs and skills
+    p = 25
+    y = 100
+    
+    draw = ImageDraw.Draw(new_im)
+    font = ImageFont.truetype("fonts/arial.ttf", 32)
+    draw.text((25, 50), "Summoner spells", (200,200,200), font=font)
+    
+    for row in summs:
+        x = p
+        for image in row:
+            r = requests.get(image)
+            b = BytesIO(r.content)
+            size = 100, 100
+            img = Image.open(b)
+            img = img.convert('RGBA')
+            img.thumbnail(size)
+            new_im.paste(img, (x+25, y))
+            x += 75
+        y += 75
+    
+    x = p
+    y += 25
+    
+    draw.text((x, y), "Skill order", (200,200,200), font=font)
+    
+    y += 75
+    i = 1
+    for image, letter in skills[0]:
+        r = requests.get(image)
+        b = BytesIO(r.content)
+        size = 100, 100
+        img = Image.open(b)
+        img = img.convert('RGBA')
+        img.thumbnail(size)
+        new_im.paste(img, (x+p, y))
+        draw.text((x+p+5, y+5), letter, (225,225,225), font=font)
+        
+        x += 75
+        
+        if i < len(skills[0]):
+            r = requests.get(arrow)
+            b = BytesIO(r.content)
+            size = 100, 100
+            img = Image.open(b)
+            img = img.convert('RGBA')
+            img.thumbnail(size)
+            new_im.paste(img, (x+5, y+15))
+        i += 1
+    y += 75
+    x = p
+    skill_font = ImageFont.truetype("fonts/arial.ttf", 20)
+    draw.text((x, y), '-'.join(skills[1]), (200,200,200), font=skill_font)
+    
+    #Inits and boots
+    p = int(total_width/3)
+    y = 100
+    draw.text((p, 50), "Starting items", (200,200,200), font=font)
+    
+    for row in inits:
+        x = p
+        i = 1
+        for image in row:
+            r = requests.get(image)
+            b = BytesIO(r.content)
+            size = 100, 100
+            img = Image.open(b)
+            img = img.convert('RGBA')
+            img.thumbnail(size)
+            new_im.paste(img, (x+25, y))
+            x += 75
+            if i < len(row):
+                r = requests.get(arrow)
+                b = BytesIO(r.content)
+                size = 100, 100
+                img = Image.open(b)
+                img = img.convert('RGBA')
+                img.thumbnail(size)
+                new_im.paste(img, (x+5, y+15))
+            i += 1
+        y += 75
+    
+    x = p
+    y += 25
+    
+    draw.text((p, y), "Boots", (200,200,200), font=font)
+    
+    y += 75
+    
+    for row in boots:
+        for image in row:
+            r = requests.get(image)
+            b = BytesIO(r.content)
+            size = 100, 100
+            img = Image.open(b)
+            img = img.convert('RGBA')
+            img.thumbnail(size)
+            new_im.paste(img, (x+25, y))
+            x += 75
+    
+    
+    
+    #Core build
+    p = int(total_width/3)*2
+    y = 100
+    draw.text((p, 50), "Core items", (200,200,200), font=font)
+    for row in build:
+        x = p
+        i = 1
+        for image in row:
+            r = requests.get(image)
+            b = BytesIO(r.content)
+            size = 100, 100
+            img = Image.open(b)
+            img = img.convert('RGBA')
+            img.thumbnail(size)
+            new_im.paste(img, (x+25, y))
+            x += 75
+            
+            if i < len(row):
+                r = requests.get(arrow)
+                b = BytesIO(r.content)
+                size = 100, 100
+                img = Image.open(b)
+                img = img.convert('RGBA')
+                img.thumbnail(size)
+                new_im.paste(img, (x+5, y+15))
+                
+            i += 1
+            
+        y += 75
+        
     return new_im
 
 
@@ -364,7 +591,7 @@ async def build(ctx, champ, pos):
     else:
         await client.say("Working on it...")
         filename = "temp.png"
-        getBuild(champ, pos).save(filename,"PNG")
+        getBuilds(champ, pos).save(filename,"PNG")
         await client.purge_from(ctx.message.channel, limit=1, check=lambda m: (m.author == ctx.message.author) or m.content.startswith("Working"))
         await client.send_file(ctx.message.channel, filename)
         try:
