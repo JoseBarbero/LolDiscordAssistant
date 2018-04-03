@@ -575,13 +575,12 @@ async def runes(ctx, champ, pos):
     else:
         await client.say("Working on it...")
         filename = "temp.png"
-        getRunes(champ, pos).save(filename,"PNG")
-        await client.purge_from(ctx.message.channel, limit=1, check=lambda m: (m.author == ctx.message.author) or m.content.startswith("Working"))
-        await client.send_file(ctx.message.channel, filename)
         try:
-            os.remove(filename)
-        except OSError:
-            pass
+            getRunes(champ, pos).save(filename,"PNG")
+            await client.send_file(ctx.message.channel, filename)
+        except:
+            await client.say("Please, introduce a correct champion name.")
+        await client.purge_from(ctx.message.channel, limit=2, check=lambda m: (m.author == ctx.message.author) or m.content.startswith("Working"))
 
 @client.command(pass_context=True)
 async def build(ctx, champ, pos):
@@ -591,9 +590,12 @@ async def build(ctx, champ, pos):
     else:
         await client.say("Working on it...")
         filename = "temp.png"
-        getBuilds(champ, pos).save(filename,"PNG")
-        await client.purge_from(ctx.message.channel, limit=1, check=lambda m: (m.author == ctx.message.author) or m.content.startswith("Working"))
-        await client.send_file(ctx.message.channel, filename)
+        try:
+            getBuilds(champ, pos).save(filename,"PNG")
+            await client.send_file(ctx.message.channel, filename)
+        except:
+            await client.say("Please, introduce a correct champion name.")
+        await client.purge_from(ctx.message.channel, limit=2, check=lambda m: (m.author == ctx.message.author) or m.content.startswith("Working"))
         try:
             os.remove(filename)
         except OSError:
